@@ -204,8 +204,8 @@ public class Solver {
                         double evBestMove = -Double.MAX_VALUE;
 
                         for (GameAction action : resultActionExpectedValues.keySet()) {
-                            // Can only factor in best moves not including split
-                            if (resultActionExpectedValues.get(action) > evBestMove && action != GameAction.SPLIT) {
+                            // Can only factor in best moves not including split or double
+                            if (resultActionExpectedValues.get(action) > evBestMove && action != GameAction.SPLIT && action != GameAction.DOUBLE) {
                                 evBestMove = resultActionExpectedValues.get(action);
                             }
                         }
@@ -287,11 +287,11 @@ public class Solver {
 
                     // If the split and new card leads to another split
                     if (resultSum == splitPlayerNode.sumVal) {
-                        evAssumingSplitIsNotBestMove += (evBestMove / allValues.size());
+                        evAssumingSplitIsNotBestMove += (2 * evBestMove / allValues.size());
                     }
                     else {
-                        evAssumingSplitIsBestMove += (evBestMove / (allValues.size() - 1));
-                        evAssumingSplitIsNotBestMove += (evBestMove / allValues.size());
+                        evAssumingSplitIsBestMove += (2 * evBestMove / (allValues.size() - 2));
+                        evAssumingSplitIsNotBestMove += (2 * evBestMove / allValues.size());
                     }
                 }
 
