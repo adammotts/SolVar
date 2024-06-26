@@ -2,7 +2,6 @@ package solver;
 
 import adammotts.cards.Card;
 
-import javax.management.remote.rmi._RMIConnection_Stub;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -108,7 +107,7 @@ public class Solver {
 
     public static void printDealerTree(HashMap<DealerGameNode, HashMap<DealerGameNode, Double>> dealerTree) {
         for (DealerGameNode node : dealerTree.keySet()) {
-            System.out.println(node + "{");
+            System.out.println(node + " {");
             for (DealerGameNode terminalNode : dealerTree.get(node).keySet()) {
                 System.out.println("\t" + terminalNode + ": " + dealerTree.get(node).get(terminalNode));
             }
@@ -120,7 +119,7 @@ public class Solver {
      * @return The expected value of various actions given a starting value (not including single cards) and
      * the dealer's card
      */
-    public static HashMap<DealerGameNode, HashMap<PlayerGameNode, HashMap<GameAction, Double>>> getPlayerTree() {
+    public static HashMap<DealerGameNode, HashMap<PlayerGameNode, HashMap<GameAction, Double>>> generatePlayerTree() {
 
         // The dealer's tree
         HashMap<DealerGameNode, HashMap<DealerGameNode, Double>> dealerTree = generateDealerStartingTree();
@@ -343,14 +342,32 @@ public class Solver {
         return ev;
     }
 
+    public static HashMap<DealerGameNode, HashMap<PlayerGameNode, HashMap<GameAction, Double>>> generatePlayerStartingTree() {
+        HashMap<DealerGameNode, HashMap<PlayerGameNode, HashMap<GameAction, Double>>> playerTree = generatePlayerTree();
+        HashMap<DealerGameNode, HashMap<PlayerGameNode, HashMap<GameAction, Double>>> startingTree = new HashMap<>();
+
+        for (DealerGameNode node : playerTree.keySet()) {
+            HashMap<PlayerGameNode, HashMap<GameAction, Double>> playerStrategyTree = playerTree.get(node);
+            startingTree.put(node, new HashMap<>());
+            for (PlayerGameNode playerNode : playerStrategyTree.keySet()) {
+                if (playerNode.type != GameNodeType.TERMINAL) {
+                    startingTree.get(node).put(playerNode, playerStrategyTree.get(playerNode));
+                }
+            }
+        }
+
+        return startingTree;
+    }
+
     public static void printPlayerTree(HashMap<DealerGameNode, HashMap<PlayerGameNode, HashMap<GameAction, Double>>> playerTree) {
         for (DealerGameNode node : playerTree.keySet()) {
-            System.out.println(node + "{");
+            System.out.println(node + " {");
             for (PlayerGameNode playerNode : playerTree.get(node).keySet()) {
-                System.out.println("\t" + playerNode + "{");
+                System.out.println("\t" + playerNode + " {");
                 for (GameAction action : playerTree.get(node).get(playerNode).keySet()) {
                     System.out.println("\t\t" + action + ": " + playerTree.get(node).get(playerNode).get(action));
                 }
+                System.out.println("\t}");
             }
             System.out.println("}");
         }
