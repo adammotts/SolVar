@@ -26,6 +26,7 @@ public class Solver {
             terminalNodeProbabilities.put(node, 0.0);
         }
 
+        int i = 0;
         for (DealerGameNode node : DealerGameNode.allDealerNodes()) {
             HashMap<DealerGameNode, Double> probabilities = new HashMap<>(terminalNodeProbabilities);
 
@@ -147,19 +148,9 @@ public class Solver {
 
                 // Initialize EVs for all terminal nodes (all actions are same EV)
                 if (playerNode.type == GameNodeType.TERMINAL) {
-                    // For player busts, all actions are -1.0
-                    if (playerNode.sumVal > 21) {
-                        for (GameAction action : expectedValues.keySet()) {
-                            expectedValues.put(action, -1.0);
-                        }
-                    }
-
-                    // For 21, all actions are a little less than 1.0 (if dealer ties)
-                    else {
-                        double ev = computeExpectedValuePlayerStand(playerNode, dealerNode);
-                        for (GameAction action : expectedValues.keySet()) {
-                            expectedValues.put(action, ev);
-                        }
+                    double ev = computeExpectedValuePlayerStand(playerNode, dealerNode);
+                    for (GameAction action : expectedValues.keySet()) {
+                        expectedValues.put(action, ev);
                     }
                 }
                 else {
@@ -324,20 +315,24 @@ public class Solver {
         int playerStandVal = playerNode.sumVal;
         double ev = 0;
 
-        for (DealerGameNode terminalDealerNode : dealerTree.get(dealerNode).keySet()) {
-            double frequency = dealerTree.get(dealerNode).get(terminalDealerNode);
+        HashMap<DealerGameNode, Double> dealerTreeCard = dealerTree.get(dealerNode);
+        for (DealerGameNode terminalDealerNode : dealerTreeCard.keySet()) {
+            double frequency = dealerTreeCard.get(terminalDealerNode);
 
-            if (terminalDealerNode.sumVal > 21) {
-                ev += 1.0 * frequency;
+            if (playerStandVal > 21) {
+                ev -= 1.0 * frequency;
             }
-            else if (terminalDealerNode.sumVal < playerStandVal) {
+            else if (terminalDealerNode.sumVal > 21) {
                 ev += 1.0 * frequency;
             }
             else if (terminalDealerNode.sumVal > playerStandVal) {
                 ev -= 1.0 * frequency;
             }
+            else if (playerStandVal > terminalDealerNode.sumVal) {
+                ev += 1.0 * frequency;
+            }
             else {
-                ev += 1.0 * 0;
+                ev += 0;
             }
         }
 
