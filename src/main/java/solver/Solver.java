@@ -328,18 +328,20 @@ public class Solver {
             double frequency = dealerTree.get(dealerNode).get(terminalDealerNode);
 
             if (terminalDealerNode.sumVal > 21) {
-                ev += frequency;
+                ev += 1.0 * frequency;
             }
             else if (terminalDealerNode.sumVal < playerStandVal) {
-                ev += frequency;
+                ev += 1.0 * frequency;
             }
             else if (terminalDealerNode.sumVal > playerStandVal) {
-                ev -= frequency;
+                ev -= 1.0 * frequency;
             }
-            // Ties are 0 EV
+            else {
+                ev += 1.0 * 0;
+            }
         }
 
-        return ev / dealerTree.get(dealerNode).size();
+        return ev;
     }
 
     public static HashMap<DealerGameNode, HashMap<PlayerGameNode, HashMap<GameAction, Double>>> generatePlayerStartingTree() {
