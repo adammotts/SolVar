@@ -210,7 +210,7 @@ public class Solver {
                             }
                         }
 
-                        // The EV of a hit is determined by the probability of pulling a single card and the max EV action of the resulting sum
+                        // The EV of a hit is determined by the probability of pulling a single card and the max EV action (not including split or double) of the resulting sum
                         expectedValues.put(
                                 GameAction.HIT,
                                 expectedValues.get(GameAction.HIT) + (evBestMove / allValues.size())
@@ -339,7 +339,7 @@ public class Solver {
             // Ties are 0 EV
         }
 
-        return ev;
+        return ev / dealerTree.get(dealerNode).size();
     }
 
     public static HashMap<DealerGameNode, HashMap<PlayerGameNode, HashMap<GameAction, Double>>> generatePlayerStartingTree() {
