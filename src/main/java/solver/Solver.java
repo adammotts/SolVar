@@ -83,7 +83,7 @@ public class Solver {
                     for (DealerGameNode terminalNode : resultNodeProbabilities.keySet()) {
                         probabilities.put(
                                 terminalNode,
-                                probabilities.get(terminalNode) + resultNodeProbabilities.get(terminalNode) / allValues.size()
+                                probabilities.get(terminalNode) + (resultNodeProbabilities.get(terminalNode) / allValues.size())
                         );
                     }
                 }
@@ -204,22 +204,23 @@ public class Solver {
 
                         double evBestMove = -Double.MAX_VALUE;
 
-                        for (Double expectedValue : resultActionExpectedValues.values()) {
-                            if (expectedValue > evBestMove) {
-                                evBestMove = expectedValue;
+                        for (GameAction action : resultActionExpectedValues.keySet()) {
+                            // Can only factor in best moves not including split
+                            if (resultActionExpectedValues.get(action) > evBestMove && action != GameAction.SPLIT) {
+                                evBestMove = resultActionExpectedValues.get(action);
                             }
                         }
 
                         // The EV of a hit is determined by the probability of pulling a single card and the max EV action of the resulting sum
                         expectedValues.put(
                                 GameAction.HIT,
-                                expectedValues.get(GameAction.HIT) + evBestMove / allValues.size()
+                                expectedValues.get(GameAction.HIT) + (evBestMove / allValues.size())
                         );
 
                         // The EV of a double is determined by 2x the probability of pulling a single card and the EV of a stand
                         expectedValues.put(
                                 GameAction.DOUBLE,
-                                expectedValues.get(GameAction.DOUBLE) + 2 * resultActionExpectedValues.get(GameAction.STAND) / allValues.size()
+                                expectedValues.get(GameAction.DOUBLE) + (2 * resultActionExpectedValues.get(GameAction.STAND) / allValues.size())
                         );
                     }
                 }
@@ -227,6 +228,7 @@ public class Solver {
                 singlePlayerTree.put(playerNode, expectedValues);
 
             }
+
             // Loop through and populate the split EVs now that we have the hit, stand, and double EVs
             for (PlayerGameNode splitPlayerNode : PlayerGameNode.allPlayerSplitNodes()) {
                 int splitVal;
@@ -277,19 +279,20 @@ public class Solver {
 
                     double evBestMove = -Double.MAX_VALUE;
 
-                    for (Double expectedValue : resultActionExpectedValues.values()) {
-                        if (expectedValue > evBestMove) {
-                            evBestMove = expectedValue;
+                    for (GameAction action : resultActionExpectedValues.keySet()) {
+                        // Can only factor in best moves not including split
+                        if (resultActionExpectedValues.get(action) > evBestMove && action != GameAction.SPLIT) {
+                            evBestMove = resultActionExpectedValues.get(action);
                         }
                     }
 
                     // If the split and new card leads to another split
                     if (resultSum == splitPlayerNode.sumVal) {
-                        evAssumingSplitIsNotBestMove += evBestMove / allValues.size();
+                        evAssumingSplitIsNotBestMove += (evBestMove / allValues.size());
                     }
                     else {
-                        evAssumingSplitIsBestMove += evBestMove / (allValues.size() - 1);
-                        evAssumingSplitIsNotBestMove += evBestMove / allValues.size();
+                        evAssumingSplitIsBestMove += (evBestMove / (allValues.size() - 1));
+                        evAssumingSplitIsNotBestMove += (evBestMove / allValues.size());
                     }
                 }
 
