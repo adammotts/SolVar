@@ -220,7 +220,7 @@ public class Solver {
                 );
             }
 
-            // Loop through one last time to account for the possibility of blackjack LAST (after actions have been computed)
+            // Loop through another time to account for the possibility of blackjack LAST (after actions have been computed)
             for (PlayerGameNode playerNode : singlePlayerTree.keySet()) {
                 if (playerNode.type == GameNodeType.TERMINAL) {
                     continue;
@@ -295,12 +295,19 @@ public class Solver {
         HashMap<DealerGameNode, HashMap<PlayerGameNode, HashMap<GameAction, Double>>> playerTree = generatePlayerTree();
         HashMap<DealerGameNode, HashMap<PlayerGameNode, HashMap<GameAction, Double>>> startingTree = new HashMap<>();
 
-        for (DealerGameNode node : playerTree.keySet()) {
-            HashMap<PlayerGameNode, HashMap<GameAction, Double>> playerStrategyTree = playerTree.get(node);
-            startingTree.put(node, new HashMap<>());
+        for (DealerGameNode dealerNode : playerTree.keySet()) {
+            HashMap<PlayerGameNode, HashMap<GameAction, Double>> playerStrategyTree = playerTree.get(dealerNode);
+            startingTree.put(dealerNode, new HashMap<>());
+
             for (PlayerGameNode playerNode : playerStrategyTree.keySet()) {
-                if (playerNode.type != GameNodeType.TERMINAL || playerNode.sumVal == 21) {
-                    startingTree.get(node).put(playerNode, playerStrategyTree.get(playerNode));
+                HashMap<GameAction, Double> actionsExpectedValue = new HashMap<>(playerStrategyTree.get(playerNode));
+
+                if (playerNode.type != GameNodeType.TERMINAL) {
+                    if (playerNode.valType != GameNodeValueType.SPLITTABLE) {
+                        actionsExpectedValue.put(GameAction.SPLIT, null);
+                    }
+
+                    startingTree.get(dealerNode).put(playerNode, actionsExpectedValue);
                 }
             }
         }
