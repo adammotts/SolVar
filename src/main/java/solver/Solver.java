@@ -7,6 +7,8 @@ import java.util.HashMap;
 
 public class Solver {
 
+    public static HashMap<DealerGameNode, HashMap<PlayerGameNode, HashMap<GameAction, Double>>> playerSolutions = generatePlayerStartingTree();
+
     /**
      * @return The probability of reaching various terminal nodes given a starting value (including a single card)
      *
@@ -302,7 +304,7 @@ public class Solver {
             for (PlayerGameNode playerNode : playerStrategyTree.keySet()) {
                 HashMap<GameAction, Double> actionsExpectedValue = new HashMap<>(playerStrategyTree.get(playerNode));
 
-                if (playerNode.type != GameNodeType.TERMINAL) {
+                if (playerNode.type != GameNodeType.TERMINAL || playerNode.sumVal == 21) {
                     if (playerNode.valType != GameNodeValueType.SPLITTABLE) {
                         actionsExpectedValue.put(GameAction.SPLIT, null);
                     }
@@ -327,5 +329,54 @@ public class Solver {
             }
             System.out.println("}");
         }
+    }
+
+    public static GameAction getBestMove(ArrayList<Card> playerCards, Card dealerCard) {
+        assert playerCards.size() == 2;
+
+        Card cardOne = playerCards.get(0);
+        Card cardTwo = playerCards.get(1);
+
+        GameNodeValueType valType;
+
+        int sumVal = cardOne.value + cardTwo.value;
+
+        if (cardOne.value == 11 || cardTwo.value == 11) {
+            if (sumVal == 21) {
+                valType = GameNodeValueType.BLACKJACK;
+            }
+            else {
+                valType = GameNodeValueType.SOFT;
+            }
+        }
+
+        else {
+            valType = GameNodeValueType.HARD;
+        }
+
+        if (cardOne.value == cardTwo.value) {
+            if (sumVal > 21) {
+                sumVal -= 10;
+            }
+            valType = GameNodeValueType.SPLITTABLE;
+        }
+
+        HashMap<GameAction, Double> solutions = playerSolutions.get(
+                new DealerGameNode(dealerCard.value, dealerCard.value >= 10 ? GameNodeValueType.MAYBE_BLACKJACK : GameNodeValueType.HARD)
+        ).get(
+                new PlayerGameNode(sumVal, valType)
+        );
+
+        GameAction bestMove = null;
+        double evBestMove = -Double.MAX_VALUE;
+
+        for (GameAction action : solutions.keySet()) {
+            if (solutions.get(action) != null && solutions.get(action) > evBestMove) {
+                evBestMove = solutions.get(action);
+                bestMove = action;
+            }
+        }
+
+        return bestMove;
     }
 }
