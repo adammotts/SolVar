@@ -1,14 +1,22 @@
 package solver;
 
+import java.util.Objects;
+
 public abstract class GameNode {
 
-    public Integer sumVal;
-    public GameNodeValueType valType;
-    public GameNodeType type;
+    public final Integer sumVal;
+    public final GameNodeValueType valType;
+    public final GameNodeType type;
+
+    public GameNode(Integer sumVal, GameNodeValueType valType, GameNodeType type) {
+        this.sumVal = sumVal;
+        this.valType = valType;
+        this.type = type;
+    }
 
     @Override
     public int hashCode() {
-        return sumVal + valType.hashCode();
+        return Objects.hash(this.sumVal, this.valType, this.type);
     }
 
     @Override

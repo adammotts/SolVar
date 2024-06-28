@@ -6,12 +6,8 @@ import java.util.ArrayList;
 
 public class DealerGameNode extends GameNode {
 
-    public DealerGameNode(Integer sumVal, GameNodeValueType type) {
-        this.sumVal = sumVal;
-        this.valType = type;
-        if (sumVal >= 17) {
-            this.type = GameNodeType.TERMINAL;
-        }
+    public DealerGameNode(Integer sumVal, GameNodeValueType valType) {
+        super(sumVal, valType, sumVal >= 17 ? GameNodeType.TERMINAL : GameNodeType.ACTIVE);
     }
 
     @Override

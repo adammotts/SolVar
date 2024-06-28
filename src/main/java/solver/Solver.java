@@ -107,7 +107,7 @@ public class Solver {
             HashMap<PlayerGameNode, HashMap<GameAction, Double>> singlePlayerTree = new HashMap<>(playerTree);
 
             // Populate one instance of the player strategy tree given a single face up dealer card
-            for (PlayerGameNode playerNode : PlayerGameNode.allPlayerNodes()) {
+            for (PlayerGameNode playerNode : PlayerGameNode.allPlayerNonSplitNodes()) {
                 HashMap<GameAction, Double> expectedValues = new HashMap<>(actionExpectedValues);
 
                 // Initialize EVs for all terminal nodes (all actions are same EV)
@@ -161,18 +161,12 @@ public class Solver {
             }
 
             // Loop through and populate the split EVs now that we have the hit, stand, and double EVs
-            for (PlayerGameNode splitPlayerNode : PlayerGameNode.allPlayerSplitNodes()) {
-                int splitVal;
-                GameNodeValueType splitType;
+            for (PlayerGameNode splittablePlayerNode : PlayerGameNode.allPlayerSplitNodes()) {
+                // Initialize the EVs of each action as the same of the non-splittable equivalent
+                singlePlayerTree.put(splittablePlayerNode, singlePlayerTree.get(splittablePlayerNode.nonSplittableEquivalent()));
 
-                if (splitPlayerNode.sumVal == 12 && splitPlayerNode.valType == GameNodeValueType.SOFT) {
-                    splitVal = 11;
-                    splitType = GameNodeValueType.SOFT;
-                }
-                else {
-                    splitVal = splitPlayerNode.sumVal / 2;
-                    splitType = GameNodeValueType.HARD;
-                }
+                // Split the cards
+                PlayerGameNode splitNode = splittablePlayerNode.simulatePlayerSplitCards();
 
                 ArrayList<Integer> allValues = new ArrayList<>(Card.ranks.values());
                 assert allValues.size() == 13;
@@ -182,31 +176,10 @@ public class Solver {
 
                 // No Blackjack possible if split
                 for (Integer cardVal : allValues) {
-                    int resultSum = splitVal + cardVal;
-                    GameNodeValueType resultType;
-
-                    if (cardVal == 11) {
-                        if (resultSum > 21) {
-                            resultSum -= 10;
-                            resultType = splitType;
-                        } else {
-                            resultType = GameNodeValueType.SOFT;
-                        }
-                    } else {
-                        if (splitType == GameNodeValueType.HARD) {
-                            resultType = GameNodeValueType.HARD;
-                        } else {
-                            if (resultSum > 21) {
-                                resultSum -= 10;
-                                resultType = GameNodeValueType.HARD;
-                            } else {
-                                resultType = GameNodeValueType.SOFT;
-                            }
-                        }
-                    }
+                    PlayerGameNode resultAfterAddCardToSplit = splitNode.simulatePlayerAddCard(cardVal);
 
                     HashMap<GameAction, Double> resultActionExpectedValues = singlePlayerTree.get(
-                            new PlayerGameNode(resultSum, resultType)
+                            resultAfterAddCardToSplit
                     );
 
                     double evBestMove = -Double.MAX_VALUE;
@@ -219,10 +192,11 @@ public class Solver {
                     }
 
                     // If the split and new card leads to another split
-                    if (resultSum == splitPlayerNode.sumVal) {
+                    if (resultAfterAddCardToSplit.valType == GameNodeValueType.SPLITTABLE) {
                         evAssumingSplitIsNotBestMove += (2 * evBestMove / allValues.size());
                     }
                     else {
+                        // Let x = ev of split. If split is best, then x = 2(a1 + a2 + a3 + ... x) / 13. Then x = 2(a1 + a2 + a3 + ...) / 11
                         evAssumingSplitIsBestMove += (2 * evBestMove / (allValues.size() - 2));
                         evAssumingSplitIsNotBestMove += (2 * evBestMove / allValues.size());
                     }
@@ -238,7 +212,7 @@ public class Solver {
                     evSplit = evAssumingSplitIsNotBestMove;
                 }
 
-                singlePlayerTree.get(splitPlayerNode).put(
+                singlePlayerTree.get(splittablePlayerNode).put(
                         GameAction.SPLIT,
                         evSplit
                 );
