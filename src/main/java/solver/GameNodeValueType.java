@@ -1,5 +1,5 @@
 package solver;
 
 public enum GameNodeValueType {
-    SOFT, HARD
+    SOFT, HARD, BLACKJACK, MAYBE_BLACKJACK
 }

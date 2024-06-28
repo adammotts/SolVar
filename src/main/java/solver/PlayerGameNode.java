@@ -21,12 +21,42 @@ public class PlayerGameNode extends GameNode {
         return false;
     }
 
+    public PlayerGameNode simulatePlayerAddCard(Integer cardVal) {
+        int resultSum = this.sumVal + cardVal;
+        GameNodeValueType resultType;
+
+        if (cardVal == 11) {
+            if (resultSum > 21) {
+                resultSum -= 10;
+                resultType = this.valType;
+            } else {
+                resultType = GameNodeValueType.SOFT;
+            }
+        } else {
+            if (this.valType == GameNodeValueType.HARD) {
+                resultType = GameNodeValueType.HARD;
+            } else {
+                if (resultSum > 21) {
+                    resultSum -= 10;
+                    resultType = GameNodeValueType.HARD;
+                } else {
+                    resultType = GameNodeValueType.SOFT;
+                }
+            }
+        }
+
+        return new PlayerGameNode(resultSum, resultType);
+    }
+
     public static ArrayList<PlayerGameNode> allPlayerNodes() {
         ArrayList<PlayerGameNode> allNodes = new ArrayList<>();
 
         for (int i = 30; i >= 22; i--) {
             allNodes.add(new PlayerGameNode(i, GameNodeValueType.HARD));
         }
+
+        allNodes.add(new PlayerGameNode(21, GameNodeValueType.BLACKJACK));
+
         for (int i = 21; i >= 11; i--) {
             allNodes.add(new PlayerGameNode(i, GameNodeValueType.HARD));
         }

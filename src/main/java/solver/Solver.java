@@ -26,7 +26,6 @@ public class Solver {
             terminalNodeProbabilities.put(node, 0.0);
         }
 
-        int i = 0;
         for (DealerGameNode node : DealerGameNode.allDealerNodes()) {
             HashMap<DealerGameNode, Double> probabilities = new HashMap<>(terminalNodeProbabilities);
 
@@ -41,45 +40,10 @@ public class Solver {
 
                 // Compute the probability of reaching the various terminal nodes based on the combination of all nodes that you can reach
                 for (Integer cardVal : allValues) {
-                    int resultSum = node.sumVal + cardVal;
-                    GameNodeValueType resultType;
+                    DealerGameNode resultAfterAddCard = node.simulateDealerAddCard(cardVal);
 
-                    if (cardVal == 11) {
+                    HashMap<DealerGameNode, Double> resultNodeProbabilities = dealerTree.get(resultAfterAddCard);
 
-                        // When pulling an ace, correct the sum accordingly. Hard remain hard and soft remain soft
-                        if (resultSum > 21) {
-                            resultSum -= 10;
-                            resultType = node.valType;
-                        }
-
-                        // Small hard values <= 10 will become soft if pulling an ace
-                        else {
-                            resultType = GameNodeValueType.SOFT;
-                        }
-                    }
-
-                    else {
-
-                        // Without an ace, all hard remain hard
-                        if (node.valType == GameNodeValueType.HARD) {
-                            resultType = GameNodeValueType.HARD;
-                        }
-
-                        // Soft values that exceed 21 become hard, others remain soft
-                        else {
-                            if (resultSum > 21) {
-                                resultSum -= 10;
-                                resultType = GameNodeValueType.HARD;
-                            }
-                            else {
-                                resultType = GameNodeValueType.SOFT;
-                            }
-                        }
-                    }
-
-                    HashMap<DealerGameNode, Double> resultNodeProbabilities = dealerTree.get(
-                            new DealerGameNode(resultSum, resultType)
-                    );
                     for (DealerGameNode terminalNode : resultNodeProbabilities.keySet()) {
                         probabilities.put(
                                 terminalNode,
@@ -165,32 +129,9 @@ public class Solver {
 
                     // Compute the EV of a hit and double
                     for (Integer cardVal : allValues) {
-                        int resultSum = playerNode.sumVal + cardVal;
-                        GameNodeValueType resultType;
+                        PlayerGameNode resultAfterAddCard = playerNode.simulatePlayerAddCard(cardVal);
 
-                        if (cardVal == 11) {
-                            if (resultSum > 21) {
-                                resultSum -= 10;
-                                resultType = playerNode.valType;
-                            } else {
-                                resultType = GameNodeValueType.SOFT;
-                            }
-                        } else {
-                            if (playerNode.valType == GameNodeValueType.HARD) {
-                                resultType = GameNodeValueType.HARD;
-                            } else {
-                                if (resultSum > 21) {
-                                    resultSum -= 10;
-                                    resultType = GameNodeValueType.HARD;
-                                } else {
-                                    resultType = GameNodeValueType.SOFT;
-                                }
-                            }
-                        }
-
-                        HashMap<GameAction, Double> resultActionExpectedValues = singlePlayerTree.get(
-                                new PlayerGameNode(resultSum, resultType)
-                        );
+                        HashMap<GameAction, Double> resultActionExpectedValues = singlePlayerTree.get(resultAfterAddCard);
 
                         double evBestMove = -Double.MAX_VALUE;
 
@@ -239,6 +180,7 @@ public class Solver {
                 double evAssumingSplitIsBestMove = 0;
                 double evAssumingSplitIsNotBestMove = 0;
 
+                // No Blackjack possible if split
                 for (Integer cardVal : allValues) {
                     int resultSum = splitVal + cardVal;
                     GameNodeValueType resultType;
@@ -314,22 +256,44 @@ public class Solver {
 
         int playerStandVal = playerNode.sumVal;
         double ev = 0;
+        double multiplier = 1.0;
+
+        if (playerStandVal == 21 && playerNode.valType == GameNodeValueType.BLACKJACK) {
+            multiplier = 1.5;
+        }
 
         HashMap<DealerGameNode, Double> dealerTreeCard = dealerTree.get(dealerNode);
         for (DealerGameNode terminalDealerNode : dealerTreeCard.keySet()) {
             double frequency = dealerTreeCard.get(terminalDealerNode);
 
-            if (playerStandVal > 21) {
-                ev -= 1.0 * frequency;
+            // Blackjack
+            if (playerNode.valType == GameNodeValueType.BLACKJACK) {
+                if (terminalDealerNode.valType == GameNodeValueType.BLACKJACK) {
+                    ev += 0;
+                }
+                else {
+                    ev += multiplier * frequency;
+                }
             }
+
+            // Player bust
+            else if (playerStandVal > 21) {
+                ev -= multiplier * frequency;
+            }
+
+            // Dealer bust
             else if (terminalDealerNode.sumVal > 21) {
-                ev += 1.0 * frequency;
+                ev += multiplier * frequency;
             }
+
+            // Dealer beats player
             else if (terminalDealerNode.sumVal > playerStandVal) {
-                ev -= 1.0 * frequency;
+                ev -= multiplier * frequency;
             }
+
+            // Player beats dealer
             else if (playerStandVal > terminalDealerNode.sumVal) {
-                ev += 1.0 * frequency;
+                ev += multiplier * frequency;
             }
             else {
                 ev += 0;
@@ -347,7 +311,7 @@ public class Solver {
             HashMap<PlayerGameNode, HashMap<GameAction, Double>> playerStrategyTree = playerTree.get(node);
             startingTree.put(node, new HashMap<>());
             for (PlayerGameNode playerNode : playerStrategyTree.keySet()) {
-                if (playerNode.type != GameNodeType.TERMINAL) {
+                if (playerNode.type != GameNodeType.TERMINAL || playerNode.sumVal == 21) {
                     startingTree.get(node).put(playerNode, playerStrategyTree.get(playerNode));
                 }
             }
