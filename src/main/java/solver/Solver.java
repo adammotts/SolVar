@@ -113,10 +113,12 @@ public class Solver {
                 // Initialize EVs for all terminal nodes (all actions are same EV)
                 if (playerNode.type == GameNodeType.TERMINAL) {
                     double ev = computeExpectedValuePlayerStand(playerNode, dealerNode);
+
                     for (GameAction action : expectedValues.keySet()) {
                         expectedValues.put(action, ev);
                     }
                 }
+
                 else {
                     ArrayList<Integer> allValues = new ArrayList<>(Card.ranks.values());
                     assert allValues.size() == 13;
@@ -218,6 +220,23 @@ public class Solver {
                 );
             }
 
+            // Loop through one last time to account for the possibility of blackjack LAST (after actions have been computed)
+            for (PlayerGameNode playerNode : singlePlayerTree.keySet()) {
+                if (playerNode.type == GameNodeType.TERMINAL) {
+                    continue;
+                }
+
+                HashMap<GameAction, Double> expectedValues = singlePlayerTree.get(playerNode);
+
+                // Compute the EV if the dealer hits a blackjack
+                for (GameAction action : expectedValues.keySet()) {
+                    expectedValues.put(
+                            action,
+                            expectedValues.get(action) - dealerTree.get(dealerNode).get(new DealerGameNode(21, GameNodeValueType.BLACKJACK))
+                    );
+                }
+            }
+
             strategyTree.put(dealerNode, singlePlayerTree);
         }
 
@@ -235,18 +254,13 @@ public class Solver {
         for (DealerGameNode terminalDealerNode : dealerTreeCard.keySet()) {
             double frequency = dealerTreeCard.get(terminalDealerNode);
 
-            // Dealer Blackjack
+            // Don't add dealer blackjack into this mix since it needs to be computed before any actions are taken
             if (terminalDealerNode.valType == GameNodeValueType.BLACKJACK) {
-                if (playerNode.valType == GameNodeValueType.BLACKJACK) {
-                    ev += 0;
-                }
-                else {
-                    ev -= 1.0 * frequency;
-                }
+                continue;
             }
 
-            // Player Blackjack
-            else if (playerNode.valType == GameNodeValueType.BLACKJACK) {
+            // Player blackjack
+            if (playerNode.valType == GameNodeValueType.BLACKJACK) {
                 ev += 1.5 * frequency;
             }
 
