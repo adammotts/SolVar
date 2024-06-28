@@ -256,44 +256,44 @@ public class Solver {
 
         int playerStandVal = playerNode.sumVal;
         double ev = 0;
-        double multiplier = 1.0;
-
-        if (playerStandVal == 21 && playerNode.valType == GameNodeValueType.BLACKJACK) {
-            multiplier = 1.5;
-        }
 
         HashMap<DealerGameNode, Double> dealerTreeCard = dealerTree.get(dealerNode);
         for (DealerGameNode terminalDealerNode : dealerTreeCard.keySet()) {
             double frequency = dealerTreeCard.get(terminalDealerNode);
 
-            // Blackjack
-            if (playerNode.valType == GameNodeValueType.BLACKJACK) {
-                if (terminalDealerNode.valType == GameNodeValueType.BLACKJACK) {
+            // Dealer Blackjack
+            if (terminalDealerNode.valType == GameNodeValueType.BLACKJACK) {
+                if (playerNode.valType == GameNodeValueType.BLACKJACK) {
                     ev += 0;
                 }
                 else {
-                    ev += multiplier * frequency;
+                    ev -= 1.0 * frequency;
                 }
+            }
+
+            // Player Blackjack
+            else if (playerNode.valType == GameNodeValueType.BLACKJACK) {
+                ev += 1.5 * frequency;
             }
 
             // Player bust
             else if (playerStandVal > 21) {
-                ev -= multiplier * frequency;
+                ev -= 1.0 * frequency;
             }
 
             // Dealer bust
             else if (terminalDealerNode.sumVal > 21) {
-                ev += multiplier * frequency;
+                ev += 1.0 * frequency;
             }
 
             // Dealer beats player
             else if (terminalDealerNode.sumVal > playerStandVal) {
-                ev -= multiplier * frequency;
+                ev -= 1.0 * frequency;
             }
 
             // Player beats dealer
             else if (playerStandVal > terminalDealerNode.sumVal) {
-                ev += multiplier * frequency;
+                ev += 1.0 * frequency;
             }
             else {
                 ev += 0;
